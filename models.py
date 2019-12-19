@@ -105,7 +105,7 @@ class DeepFM(nn.Module):
         arr = [emb(cat_feats[:, i]) for i, emb in enumerate(embeddings[order+'_cat'])]
         if self.use_cont_for_fm:
             arr += [
-                emb(torch.zeros(cont_feats.size(0), dtype=torch.long)) * cont_feats[:, i:i + 1]
+                emb(torch.zeros(cont_feats.size(0), dtype=torch.long, device=cont_feats.device)) * cont_feats[:, i:i + 1]
                 for i, emb in enumerate(embeddings[order+'_cont'])
             ]
         return arr
