@@ -20,11 +20,13 @@ class DeepFM(nn.Module):
         - Output: (N, 2), indicate negative prob (idx=0) and positive prob (idx=1)
 
     Attributes:
-        bias: bias for fm part
-        fm_cat_first_order_embeddings: MoudleList([Embedding(feature_size, 1)]), for fm first order caterical features
-        fm_cont_first_order_embeddings: MoudleList([Embedding(1, 1)]), for fm first order continuous features
-        fm_cat_second_order_embeddings: MoudleList([Embedding(feature_size, embedding_dim)]), for fm second order caterical features
-        fm_cont_second_order_embeddings: MoudleList([Embedding(1, embedding_dim)]), for fm second order continuous features
+        bias: Parameter, bias for fm part
+        embeddings: MoudleDict{
+            'cat_first':  MoudleList([Embedding(feature_size, 1)]) for fm first order categorical features,
+            'cont_first': MoudleList([Embedding(1, 1)]) for fm first order continuous features,
+            'cat_second': MoudleList([Embedding(feature_size, embedding_dim)]) for fm second order categorical features,
+            'cont_second': MoudleList([Embedding(1, embedding_dim)]), for fm second order continuous features
+        }
         dnn: Sequential, multple dnn hidden layers, including Linear, BatchNorm, Relu, Dropout
         
     Examples::
@@ -65,7 +67,6 @@ class DeepFM(nn.Module):
             })
 
         """ init deep part """
-        # self.field_size = len(feature_sizes)
         # input layer + hidden layers + output layer(1)
         if use_cont_for_fm:
             input_dim = (len(cat_feature_sizes) + n_cont_features) * embedding_dim
