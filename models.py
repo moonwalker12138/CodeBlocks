@@ -53,23 +53,16 @@ class DeepFM(nn.Module):
 
         """ init fm part """
         self.bias = nn.Parameter(torch.randn(1))
-
-        # first order embedding
-        self.fm_cat_first_order_embeddings = nn.ModuleList(
-            [nn.Embedding(feature_size, 1) for feature_size in cat_feature_sizes]
-        )
+        
+        self.embeddings = nn.ModuleDict({
+            'first_cat': nn.ModuleList([nn.Embedding(feature_size, 1) for feature_size in cat_feature_sizes]),
+            'second_cat': nn.ModuleList([nn.Embedding(feature_size, embedding_dim) for feature_size in cat_feature_sizes])
+        })
         if use_cont_for_fm:
-            self.fm_cont_first_order_embeddings = nn.ModuleList(
-                [nn.Embedding(1, 1) for _ in range(n_cont_features)]
-            )
-        # second order embedding
-        self.fm_cat_second_order_embeddings = nn.ModuleList(
-            [nn.Embedding(feature_size, embedding_dim) for feature_size in cat_feature_sizes]
-        )
-        if use_cont_for_fm:
-            self.fm_cont_second_order_embeddings = nn.ModuleList(
-                [nn.Embedding(1, embedding_dim) for _ in range(n_cont_features)]
-            )
+            self.embeddings.update({
+                'first_cont': nn.ModuleList([nn.Embedding(1, 1) for _ in range(n_cont_features)]),
+                'second_cont': nn.ModuleList([nn.Embedding(1, embedding_dim) for _ in range(n_cont_features)])
+            })
 
         """ init deep part """
         # self.field_size = len(feature_sizes)
@@ -93,20 +86,11 @@ class DeepFM(nn.Module):
 
     def get_embedding_arr(self, cat_feats:torch.Tensor, cont_feats:torch.Tensor, order:str):
         assert order in ['first', 'second']
-        embeddings = {
-            'first_cat': self.fm_cat_first_order_embeddings,
-            'second_cat': self.fm_cat_second_order_embeddings,
-        }
-        if self.use_cont_for_fm:
-            embeddings.update({
-                'first_cont': self.fm_cont_first_order_embeddings,
-                'second_cont': self.fm_cont_second_order_embeddings
-            })
-        arr = [emb(cat_feats[:, i]) for i, emb in enumerate(embeddings[order+'_cat'])]
+        arr = [emb(cat_feats[:, i]) for i, emb in enumerate(self.embeddings[order+'_cat'])]
         if self.use_cont_for_fm:
             arr += [
                 emb(torch.zeros(cont_feats.size(0), dtype=torch.long, device=cont_feats.device)) * cont_feats[:, i:i + 1]
-                for i, emb in enumerate(embeddings[order+'_cont'])
+                for i, emb in enumerate(self.embeddings[order+'_cont'])
             ]
         return arr
 
